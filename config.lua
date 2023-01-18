@@ -11,7 +11,7 @@ an executable
 -- general
 lvim.log.level = "warn"
 lvim.format_on_save.enabled = false
-lvim.colorscheme = "tokyonight"
+lvim.colorscheme = "catppuccin"
 vim.opt.timeoutlen = 200
 lvim.builtin.dap.active = true
 -- to disable icons and use a minimalist setup, uncomment the following
@@ -177,6 +177,7 @@ lvim.builtin.treesitter.highlight.enable = true
 
 -- Additional Plugins
 lvim.plugins = {
+  'catppuccin/nvim',
   {
     "folke/trouble.nvim",
     cmd = "TroubleToggle",
@@ -239,6 +240,34 @@ lvim.plugins = {
       vim.cmd [[packadd telescope.nvim]]
     end,
   },
+  {
+    "windwp/nvim-spectre",
+    event = "BufRead",
+    config = function()
+      require("spectre").setup()
+    end,
+  },
+  {
+    "camspiers/snap",
+    rocks = "fzy",
+    config = function()
+      local snap = require "snap"
+      local layout = snap.get("layout").bottom
+      local file = snap.config.file:with { consumer = "fzy", layout = layout }
+      local vimgrep = snap.config.vimgrep:with { layout = layout }
+      snap.register.command("find_files", file { producer = "ripgrep.file" })
+      snap.register.command("buffers", file { producer = "vim.buffer" })
+      snap.register.command("oldfiles", file { producer = "vim.oldfile" })
+      snap.register.command("live_grep", vimgrep {})
+    end,
+  },
+  {
+    "andymass/vim-matchup",
+    event = "CursorMoved",
+    config = function()
+      vim.g.matchup_matchparen_offscreen = { method = "popup" }
+    end,
+  },
 }
 
 -- Autocommands (https://neovim.io/doc/user/autocmd.html)
@@ -257,30 +286,31 @@ lvim.plugins = {
 
 -- Dap for node
 function dap_config()
-    local ok, dap = pcall(require, "dap")
-    if not ok then
-        return
-    end
-    dap.configurations.typescript = {
-        {
-            type = "node2",
-            name = "node attach",
-            request = "attach",
-            program = "${file}",
-            cwd = vim.fn.getcwd(),
-            sourceMaps = true,
-            protocol = "inspector",
-        }
+  local ok, dap = pcall(require, "dap")
+  if not ok then
+    return
+  end
+  dap.configurations.typescript = {
+    {
+      type = "node2",
+      name = "node attach",
+      request = "attach",
+      -- program = "${file}",
+      port = 9229,
+      cwd = vim.fn.getcwd(),
+      sourceMaps = true,
+      protocol = "inspector",
     }
-    dap.configurations.javascript = dap.configurations.typescript
-    local mason_path = vim.fn.glob(vim.fn.stdpath "data" .. "/mason/")
-    dap.adapters.node2 = {
-        type = "executable",
-        command = "node",
-        args = { mason_path .. "package/node-debug2-adapter/out/src/nodeDebug.js" }
-    }
+  }
+  dap.configurations.javascript = dap.configurations.typescript
+  local mason_path = vim.fn.glob(vim.fn.stdpath "data" .. "/mason/")
+  dap.adapters.node2 = {
+    type = "executable",
+    command = "node",
+    args = { mason_path .. "package/node-debug2-adapter/out/src/nodeDebug.js" }
+  }
 end
-    
+
 if lvim.builtin.dap.active then
-    dap_config()
+  dap_config()
 end
